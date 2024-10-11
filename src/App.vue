@@ -5,24 +5,37 @@
         <router-link to="/" class="nav-logo">Haiku Harmony</router-link>
       </div>
       <div class="navbar-center">
+        <form @submit.prevent="performSearch" class="search-form">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search tags..."
+            class="search-input"
+          >
+          <button type="submit" class="search-button">Search</button>
+        </form>
+      </div>
+      <div class="navbar-right">
         <router-link to="/hall-of-fame" class="nav-link">Hall Of Fame</router-link>
         <router-link to="/submit" class="nav-link">Create a Haiku</router-link>
         <router-link to="/about" class="nav-link">About</router-link>
-      </div>
-      <div class="navbar-right">
-        <template v-if="user">
-          <div class="account-dropdown" @click="toggleDropdown">
-            <ProfileImage v-if="user.photoURL" :src="user.photoURL" />
-            <span v-else class="account-icon">👤</span>
-            <div v-if="showDropdown" class="dropdown-content">
-              <span>{{ user.displayName || user.email }}</span>
-              <a href="#" @click.prevent="logout">Logout</a>
+        <div class="account-profile">
+          <template v-if="user">
+            <div class="account-dropdown" ref="dropdownRef">
+              <div @click.stop="toggleDropdown">
+                <ProfileImage v-if="user.photoURL" :src="user.photoURL" />
+                <span v-else class="account-icon">👤</span>
+              </div>
+              <div v-if="showDropdown" class="dropdown-content">
+                <a @click="navigateToUserPage">{{ user.displayName || user.email }}</a>
+                <a href="#" @click.prevent="logout">Logout</a>
+              </div>
             </div>
-          </div>
-        </template>
-        <template v-else>
-          <router-link to="/login" class="nav-link">Sign In</router-link>
-        </template>
+          </template>
+          <template v-else>
+            <router-link to="/login" class="nav-link">Sign In</router-link>
+          </template>
+        </div>
       </div>
     </nav>
     <router-view></router-view>
@@ -30,24 +43,26 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from './services/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'vue-router';
+import ProfileImage from './components/ProfileImage.vue';
 
 export default {
+  components: {
+    ProfileImage
+  },
   setup() {
-    const user = ref(null);
     const router = useRouter();
+    const user = ref(null);
     const showDropdown = ref(false);
+    const dropdownRef = ref(null);
+    const searchQuery = ref('');
 
-    const logout = async () => {
-      try {
-        await signOut(auth);
-        alert('Logged out successfully');
-        router.push('/');
-      } catch (error) {
-        console.error('Logout error:', error);
+    const performSearch = () => {
+      if (searchQuery.value.trim()) {
+        router.push({ name: 'SearchResults', query: { tags: searchQuery.value } });
       }
     };
 
@@ -55,13 +70,49 @@ export default {
       showDropdown.value = !showDropdown.value;
     };
 
+    const closeDropdown = (event) => {
+      if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+        showDropdown.value = false;
+      }
+    };
+
+    const navigateToUserPage = () => {
+      if (user.value) {
+        router.push(`/user/${user.value.uid}`);
+        showDropdown.value = false;
+      }
+    };
+
+    const logout = async () => {
+      try {
+        await signOut(auth);
+        router.push('/');
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    };
+
     onMounted(() => {
-      auth.onAuthStateChanged(currentUser => {
+      auth.onAuthStateChanged((currentUser) => {
         user.value = currentUser;
       });
+      document.addEventListener('click', closeDropdown);
     });
 
-    return { user, logout, showDropdown, toggleDropdown };
+    onUnmounted(() => {
+      document.removeEventListener('click', closeDropdown);
+    });
+
+    return {
+      user,
+      showDropdown,
+      dropdownRef,
+      toggleDropdown,
+      navigateToUserPage,
+      logout,
+      searchQuery,
+      performSearch
+    };
   }
 }
 </script>
@@ -75,15 +126,15 @@ export default {
 }
 
 .navbar {
+  font-family: "Dancing Script", cursive;
+  font-optical-sizing: auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: #f8f8f8;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.navbar-left, .navbar-center, .navbar-right {
+.navbar-left, .navbar-right, .account-profile {
   display: flex;
   align-items: center;
 }
@@ -134,5 +185,31 @@ export default {
 
 .dropdown-content a:hover {
   background-color: #f1f1f1;
+}
+
+.navbar-center {
+  display: flex;
+  align-items: center;
+}
+
+.search-form {
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  padding: 0.5rem;
+  margin-right: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.search-button {
+  padding: 0.5rem 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 </style>

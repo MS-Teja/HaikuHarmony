@@ -3,16 +3,22 @@ const axios = require('axios');
 
 const pinata = new pinataSDK({ pinataJWTKey: process.env.PINATA_JWT });
 const pinataGateway = process.env.PINATA_GATEWAY;
-const IMAGE_MAP_CID = 'QmbVtDZJJrKyFAtGRzJPXayDkVecayQCKq8QCMeEghP6vZ'; // CID of your imageMap.json
+const IMAGE_MAP_CID = 'QmbVtDZJJrKyFAtGRzJPXayDkVecayQCKq8QCMeEghP6vZ';
 
 exports.handler = async (event) => {
-  console.log('Fetching top haikus...');
+  const { userId } = event.queryStringParameters;
+
+  if (!userId) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'User ID is required' })
+    };
+  }
+
   try {
     // Fetch the image map
     const imageMapResponse = await axios.get(`https://${pinataGateway}/ipfs/${IMAGE_MAP_CID}`);
     const imageMap = imageMapResponse.data;
-
-    console.log('Fetched image map:', imageMap);
 
     // Fetch all haikus
     const pinList = await pinata.pinList({
@@ -20,14 +26,15 @@ exports.handler = async (event) => {
       metadata: { name: 'haiku_metadata.json' }
     });
 
-    console.log('Fetched pin list:', pinList);
-
-    // Process and sort haikus
-    const haikus = await Promise.all(pinList.rows.map(async (pin) => {
+    const userHaikus = await Promise.all(pinList.rows.map(async (pin) => {
       const response = await axios.get(`https://${pinataGateway}/ipfs/${pin.ipfs_pin_hash}`);
       const haikuData = response.data;
 
-      // Map the numeric image identifier to an IPFS hash
+      // Check if this haiku belongs to the requested user
+      if (haikuData.userId !== userId) {
+        return null;
+      }
+
       const imageHash = imageMap[haikuData.image] || haikuData.image;
 
       return {
@@ -43,23 +50,24 @@ exports.handler = async (event) => {
       };
     }));
 
-    // Sort haikus by likes in descending order and get the top 5
-    const topHaikus = haikus
-      .sort((a, b) => b.likes - a.likes)
-      .slice(0, 5);
-
-    console.log('Top 5 haikus:', topHaikus);
+    // Filter out null values and sort by timestamp
+    const filteredHaikus = userHaikus.filter(haiku => haiku !== null)
+      .sort((a, b) => b.timestamp - a.timestamp);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ haikus: topHaikus, pinataGateway })
+      body: JSON.stringify({
+        haikus: filteredHaikus,
+        pinataGateway,
+        displayName: filteredHaikus[0]?.displayName || 'User'
+      })
     };
 
   } catch (error) {
-    console.error('Error fetching top haikus:', error);
+    console.error('Error fetching user haikus:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to fetch top haikus', details: error.message })
+      body: JSON.stringify({ error: 'Failed to fetch user haikus', details: error.message })
     };
   }
 };

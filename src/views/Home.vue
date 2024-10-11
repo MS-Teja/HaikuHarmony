@@ -5,32 +5,33 @@
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else-if="sortedHaikus.length === 0" class="no-haikus">No haikus found.</div>
     <div v-else class="haiku-grid">
-      <div v-for="haiku in sortedHaikus" :key="haiku.id" class="haiku-card">
+      <div v-for="haiku in sortedHaikus" :key="haiku.id" class="haiku-card" @click="navigateToHaiku(haiku.id)">
         <div class="haiku-image-container">
           <img
-            :src="getImageSrc(haiku.image)"
+            v-lazy="{
+              src: getImageSrc(haiku.image),
+              loading: '/images/loading-placeholder.webp',
+              error: '/images/error-placeholder.webp'
+            }"
             :alt="haiku.text"
-            @error="() => imageError(haiku.id)"
-            v-if="!haiku.imageError"
           >
-          <div v-else class="image-error">Failed to load image</div>
           <div class="haiku-text-overlay">
             <p v-for="(line, index) in haiku.text.split('\n')" :key="index">{{ line }}</p>
           </div>
         </div>
         <div class="haiku-footer">
-          <div class="author">
-            <img :src="haiku.photoURL" :alt="haiku.displayName" class="author-avatar" @error="() => authorImageError(haiku.id)">
+          <div class="author" @click.stop="navigateToUserPage(haiku.userId)">
+            <img :src="haiku.photoURL" :alt="haiku.displayName" class="author-avatar">
             <span>{{ haiku.displayName || 'Anonymous' }}</span>
           </div>
           <div class="tags">
             <span v-for="tag in haiku.tags" :key="tag" class="tag">{{ tag }}</span>
           </div>
           <div class="haiku-actions">
-            <button class="like-btn" @click="likeHaiku(haiku.id)" :class="{ liked: haiku.liked }">
+            <button class="like-btn" @click.stop="toggleLike(haiku)" :disabled="!isAuthenticated">
               ❤️ {{ haiku.likes }}
             </button>
-            <button class="share-btn" @click="shareHaiku(haiku)">🔗</button>
+            <button class="share-btn" @click.stop="shareHaiku(haiku.id)">🔗</button>
           </div>
         </div>
       </div>
@@ -40,13 +41,18 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { auth, db } from '../services/firebase';
+import { doc, updateDoc, increment, arrayUnion, arrayRemove, getDoc, setDoc } from 'firebase/firestore';
 
 export default {
   setup() {
+    const router = useRouter();
     const haikus = ref([]);
     const pinataGateway = ref('');
     const loading = ref(true);
     const error = ref(null);
+    const isAuthenticated = ref(false);
 
     const sortedHaikus = computed(() => {
       return [...haikus.value].sort((a, b) => b.timestamp - a.timestamp);
@@ -60,27 +66,32 @@ export default {
         }
 
         const data = await response.json();
-        console.log('Fetched data:', data);
-
-        if (!data.haikus || !Array.isArray(data.haikus)) {
-          throw new Error('Invalid haiku data received');
-        }
-
         haikus.value = data.haikus.map(haiku => ({
           ...haiku,
+          likes: 0,
           liked: false,
           imageError: false,
           authorImageError: false
         }));
-
         pinataGateway.value = data.pinataGateway;
 
-        console.log('Processed haikus:', haikus.value);
+        // Fetch likes for each haiku
+        await Promise.all(haikus.value.map(fetchLikesForHaiku));
       } catch (err) {
         console.error("Error fetching data:", err);
         error.value = `Failed to load haikus: ${err.message}`;
       } finally {
         loading.value = false;
+      }
+    };
+
+    const fetchLikesForHaiku = async (haiku) => {
+      const likesRef = doc(db, 'likes', haiku.id);
+      const likesDoc = await getDoc(likesRef);
+      if (likesDoc.exists()) {
+        const data = likesDoc.data();
+        haiku.likes = data.count;
+        haiku.liked = isAuthenticated.value && data.users.includes(auth.currentUser.uid);
       }
     };
 
@@ -103,16 +114,124 @@ export default {
     };
 
     const likeHaiku = async (id) => {
-      // Implement like functionality
-      console.log('Liking haiku:', id);
+      if (!isAuthenticated.value) {
+        alert('Please log in to like a haiku');
+        return;
+      }
+
+      try {
+        const likesRef = doc(db, 'likes', id);
+        const likesDoc = await getDoc(likesRef);
+
+        if (likesDoc.exists()) {
+          const data = likesDoc.data();
+          if (data.users.includes(auth.currentUser.uid)) {
+            console.log('User has already liked this haiku');
+            return;
+          }
+          await updateDoc(likesRef, {
+            count: increment(1),
+            users: arrayUnion(auth.currentUser.uid)
+          });
+        } else {
+          await setDoc(likesRef, {
+            count: 1,
+            users: [auth.currentUser.uid]
+          });
+        }
+
+        const haiku = haikus.value.find(h => h.id === id);
+        if (haiku) {
+          haiku.likes++;
+          haiku.liked = true;
+        }
+      } catch (error) {
+        console.error('Error liking haiku:', error);
+        alert('Failed to like haiku. Please try again.');
+      }
     };
 
-    const shareHaiku = (haiku) => {
-      // Implement share functionality
-      console.log('Sharing haiku:', haiku.id);
+    const navigateToHaiku = (haikuId) => {
+      router.push(`/haiku/${haikuId}`);
     };
 
-    onMounted(fetchHaikusAndLikes);
+    const shareHaiku = async (haikuId) => {
+      const shareUrl = `${window.location.origin}/haiku/${haikuId}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Check out this haiku!',
+            url: shareUrl,
+          });
+        } catch (error) {
+          console.error('Error sharing haiku:', error);
+          fallbackShare(shareUrl);
+        }
+      } else {
+        fallbackShare(shareUrl);
+      }
+    };
+
+    const fallbackShare = async (url) => {
+      try {
+        await navigator.clipboard.writeText(url);
+        alert('Haiku link copied to clipboard!');
+      } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        alert('Failed to copy link. Please try again.');
+      }
+    };
+
+    const toggleLike = async (haiku) => {
+      if (!isAuthenticated.value) {
+        alert('Please log in to like a haiku');
+        return;
+      }
+
+      const isLiking = !haiku.liked;
+
+      // Optimistic update
+      haiku.liked = isLiking;
+      haiku.likes += isLiking ? 1 : -1;
+
+      try {
+        const likesRef = doc(db, 'likes', haiku.id);
+        const likesDoc = await getDoc(likesRef);
+
+        if (likesDoc.exists()) {
+          await updateDoc(likesRef, {
+            count: increment(isLiking ? 1 : -1),
+            users: isLiking
+              ? arrayUnion(auth.currentUser.uid)
+              : arrayRemove(auth.currentUser.uid)
+          });
+        } else if (isLiking) {
+          await setDoc(likesRef, {
+            count: 1,
+            users: [auth.currentUser.uid]
+          });
+        }
+      } catch (error) {
+        console.error('Error updating like:', error);
+        // Revert optimistic update
+        haiku.liked = !isLiking;
+        haiku.likes += isLiking ? -1 : 1;
+        alert('Failed to update like. Please try again.');
+      }
+    };
+
+    const navigateToUserPage = (userId) => {
+      router.push(`/user/${userId}`);
+    };
+
+    onMounted(() => {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        isAuthenticated.value = !!user;
+        fetchHaikusAndLikes();
+      });
+      return () => unsubscribe();
+    });
 
     return {
       sortedHaikus,
@@ -123,7 +242,11 @@ export default {
       imageError,
       authorImageError,
       likeHaiku,
-      shareHaiku
+      shareHaiku,
+      isAuthenticated,
+      toggleLike,
+      navigateToHaiku,
+      navigateToUserPage
     };
   }
 }
@@ -214,6 +337,7 @@ export default {
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
 }
 
 .haiku-image-container {
@@ -228,7 +352,7 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* object-fit: cover; */
 }
 
 .haiku-text-overlay {

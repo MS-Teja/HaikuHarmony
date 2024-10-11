@@ -1,96 +1,84 @@
 <template>
-  <div class="hall-of-fame">
-    <div v-if="loading" class="loading">Loading top haikus...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
-    <div v-else class="haiku-grid">
-      <div v-for="haiku in topHaikus" :key="haiku.id" class="haiku-card" @click="navigateToHaiku(haiku.id)">
-        <div class="haiku-image-container">
-          <img
-            v-lazy="{
-              src: getImageSrc(haiku.image),
-              loading: '/images/loading-placeholder.webp',
-              error: '/images/error-placeholder.webp'
-            }"
-            :alt="haiku.text"
-          >
-          <div class="haiku-text-overlay">
-            <p v-for="(line, index) in haiku.text.split('\n')" :key="index">{{ line }}</p>
-          </div>
-        </div>
-        <div class="haiku-footer">
-          <div class="author" @click.stop="navigateToUserPage(haiku.userId)">
+    <div class="user-account">
+      <h1>{{ displayName }}'s Haikus</h1>
+      <div v-if="loading" class="loading">Loading haikus...</div>
+      <div v-else-if="error" class="error">{{ error }}</div>
+      <div v-else-if="userHaikus.length === 0" class="no-haikus">No haikus found.</div>
+      <div v-else class="haiku-grid">
+        <div v-for="haiku in userHaikus" :key="haiku.id" class="haiku-card" @click="navigateToHaiku(haiku.id)">
+          <div class="haiku-image-container">
             <img
-              v-if="haiku.photoURL"
-              :src="haiku.photoURL"
-              :alt="haiku.displayName"
-              class="author-avatar"
-              @error="handleAvatarError(haiku)"
+              v-lazy="{
+                src: getImageSrc(haiku.image),
+                loading: '/images/loading-placeholder.webp',
+                error: '/images/error-placeholder.webp'
+              }"
+              :alt="haiku.text"
             >
-            <div v-else class="author-avatar-placeholder">{{ getInitials(haiku.displayName) }}</div>
-            <span>{{ haiku.displayName || 'Anonymous' }}</span>
+            <div class="haiku-text-overlay">
+              <p v-for="(line, index) in haiku.text.split('\n')" :key="index">{{ line }}</p>
+            </div>
           </div>
-          <div class="tags">
-            <span v-for="tag in haiku.tags" :key="tag" class="tag">{{ tag }}</span>
-          </div>
-          <div class="haiku-actions">
-          <button class="like-btn" @click.stop="toggleLike(haiku)" :disabled="!isAuthenticated">
-              ❤️ {{ haiku.likes }}
-            </button>
+          <div class="haiku-footer">
+            <div class="author">
+              <img :src="haiku.photoURL" :alt="haiku.displayName" class="author-avatar">
+              <span>{{ haiku.displayName || 'Anonymous' }}</span>
+            </div>
+            <div class="tags">
+              <span v-for="tag in haiku.tags" :key="tag" class="tag">{{ tag }}</span>
+            </div>
+            <div class="haiku-actions">
+            <button class="like-btn" @click.stop="toggleLike(haiku)" :disabled="!isAuthenticated">
+                ❤️ {{ haiku.likes }}
+              </button>
             <button class="share-btn" @click.stop="shareHaiku(haiku.id)">🔗</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</template>
+  </template>
 
-<script>
+  <script>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { auth, db } from '../services/firebase';
 import { doc, updateDoc, increment, arrayUnion, arrayRemove, getDoc, setDoc } from 'firebase/firestore';
 
-export default {
-  setup() {
-    const router = useRouter();
-    const topHaikus = ref([]);
-    const pinataGateway = ref('');
-    const loading = ref(true);
-    const error = ref(null);
-    const isAuthenticated = ref(false);
+  export default {
+    setup() {
+      const route = useRoute();
+      const router = useRouter();
+      const userHaikus = ref([]);
+      const pinataGateway = ref('');
+      const loading = ref(true);
+      const error = ref(null);
+      const displayName = ref('');
+      const isAuthenticated = ref(false);
 
+      const getImageSrc = (imageHash) => {
+        return `https://${pinataGateway.value}/ipfs/${imageHash}`;
+      };
 
-    const getImageSrc = (imageHash) => {
-      return `https://${pinataGateway.value}/ipfs/${imageHash}`;
-    };
-
-    const fetchTopHaikus = async () => {
-      try {
-        const response = await fetch('/.netlify/functions/fetchTopHaikus');
-        if (!response.ok) {
-          throw new Error('Failed to fetch top haikus');
+      const fetchUserHaikus = async () => {
+        try {
+          const userId = route.params.userId;
+          const response = await fetch(`/.netlify/functions/fetchUserHaikus?userId=${userId}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch user haikus');
+          }
+          const data = await response.json();
+          userHaikus.value = data.haikus;
+          pinataGateway.value = data.pinataGateway;
+          displayName.value = data.displayName || 'User';
+        } catch (err) {
+          console.error("Error fetching user haikus:", err);
+          error.value = "Failed to load haikus. Please try again later.";
+        } finally {
+          loading.value = false;
         }
-        const data = await response.json();
-        topHaikus.value = data.haikus.map(haiku => ({
-          ...haiku,
-          likes: 0,
-          liked: false,
-          imageError: false,
-          authorImageError: false
-        }));;
-        pinataGateway.value = data.pinataGateway;
-
-        // Fetch likes for each haiku
-        await Promise.all(topHaikus.value.map(fetchLikesForHaiku));
-      } catch (err) {
-        console.error("Error fetching top haikus:", err);
-        error.value = "Failed to load top haikus. Please try again later.";
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const fetchLikesForHaiku = async (haiku) => {
+      };
+      const fetchLikesForHaiku = async (haiku) => {
       const likesRef = doc(db, 'likes', haiku.id);
       const likesDoc = await getDoc(likesRef);
       if (likesDoc.exists()) {
@@ -100,21 +88,11 @@ export default {
       }
     };
 
-    const imageError = (id) => {
-      const haiku = haikus.value.find(h => h.id === id);
-      if (haiku) {
-        haiku.imageError = true;
-      }
-    };
+      const navigateToHaiku = (haikuId) => {
+        router.push(`/haiku/${haikuId}`);
+      };
 
-    const authorImageError = (id) => {
-      const haiku = haikus.value.find(h => h.id === id);
-      if (haiku) {
-        haiku.authorImageError = true;
-      }
-    };
-
-    const likeHaiku = async (id) => {
+      const likeHaiku = async (id) => {
       if (!isAuthenticated.value) {
         alert('Please log in to like a haiku');
         return;
@@ -150,10 +128,6 @@ export default {
         console.error('Error liking haiku:', error);
         alert('Failed to like haiku. Please try again.');
       }
-    };
-
-    const navigateToHaiku = (haikuId) => {
-      router.push(`/haiku/${haikuId}`);
     };
 
     const shareHaiku = async (haikuId) => {
@@ -222,46 +196,30 @@ export default {
       }
     };
 
-    const navigateToUserPage = (userId) => {
-      router.push(`/user/${userId}`);
-    };
-
     onMounted(() => {
       const unsubscribe = auth.onAuthStateChanged((user) => {
         isAuthenticated.value = !!user;
-        fetchTopHaikus();
+        fetchUserHaikus();
       });
       return () => unsubscribe();
     });
 
-    const handleAvatarError = (haiku) => {
-      haiku.photoURL = null;  // This will trigger the placeholder to show
-    };
-
-    const getInitials = (name) => {
-      return name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
-    };
-
-    return {
-      topHaikus,
-      pinataGateway,
-      loading,
-      error,
-      getImageSrc,
-      imageError,
-      authorImageError,
-      likeHaiku,
+      return {
+        userHaikus,
+        loading,
+        error,
+        getImageSrc,
+        displayName,
+        navigateToHaiku,
+        likeHaiku,
       shareHaiku,
       isAuthenticated,
       toggleLike,
-      navigateToHaiku,
-      navigateToUserPage,
-      handleAvatarError,
-      getInitials
-    };
+      navigateToHaiku
+      };
+    }
   }
-}
-</script>
+  </script>
 
 <style scoped>
 .author-avatar {
@@ -294,6 +252,14 @@ export default {
   flex-wrap: wrap;
   margin-top: 5px;
 }
+.tag {
+  background-color: #f0f0f0;
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-right: 5px;
+  font-size: 0.8em;
+}
+
 .like-btn.liked {
   color: #ff4081;
 }
@@ -311,7 +277,7 @@ export default {
   margin-right: 5px;
 }
 
-.hall-of-fame {
+.user-account {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
@@ -415,17 +381,5 @@ export default {
   color: white;
   padding: 10px;
   border-radius: 5px;
-}
-
-.author-avatar-placeholder {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: #ccc;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-  margin-right: 10px;
 }
 </style>

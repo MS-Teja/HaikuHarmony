@@ -16,14 +16,21 @@
       </div>
       <div class="haiku-footer">
           <div class="author" @click.stop="navigateToUserPage(haiku.userId)">
-            <img :src="haiku.photoURL" :alt="haiku.displayName" class="author-avatar">
+            <img
+              v-if="haiku.photoURL"
+              :src="haiku.photoURL"
+              :alt="haiku.displayName"
+              class="author-avatar"
+              @error="handleAvatarError(haiku)"
+            >
+            <div v-else class="author-avatar-placeholder">{{ getInitials(haiku.displayName) }}</div>
             <span>{{ haiku.displayName || 'Anonymous' }}</span>
           </div>
           <div class="tags">
             <span v-for="tag in haiku.tags" :key="tag" class="tag">{{ tag }}</span>
           </div>
           <div class="haiku-actions">
-            <button class="like-btn" @click.stop="toggleLike(haiku)" :disabled="!isAuthenticated">
+            <button class="like-btn" @click.stop="toggleLike(haiku)">
               ❤️ {{ haiku.likes }}
             </button>
             <button class="share-btn" @click.stop="shareHaiku(haiku.id)">🔗</button>
@@ -215,6 +222,14 @@ export default {
       router.push(`/user/${userId}`);
     };
 
+    const handleAvatarError = (haiku) => {
+      haiku.photoURL = null;  // This will trigger the placeholder to show
+    };
+
+    const getInitials = (name) => {
+      return name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
+    };
+
     onMounted(() => {
       const unsubscribe = auth.onAuthStateChanged((user) => {
         isAuthenticated.value = !!user;
@@ -238,7 +253,10 @@ export default {
       getImageSrc,
       handleImageError,
       errorMessage,
-      navigateToUserPage };
+      navigateToUserPage,
+      handleAvatarError,
+      getInitials
+     };
   }
 }
 </script>

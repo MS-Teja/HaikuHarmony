@@ -33,7 +33,7 @@
             <span v-for="tag in haiku.tags" :key="tag" class="tag">{{ tag }}</span>
           </div>
           <div class="haiku-actions">
-          <button class="like-btn" @click.stop="toggleLike(haiku)" :disabled="!isAuthenticated">
+          <button class="like-btn" @click.stop="toggleLike(haiku)">
               ❤️ {{ haiku.likes }}
             </button>
             <button class="share-btn" @click.stop="shareHaiku(haiku.id)">🔗</button>
@@ -226,14 +226,6 @@ export default {
       router.push(`/user/${userId}`);
     };
 
-    onMounted(() => {
-      const unsubscribe = auth.onAuthStateChanged((user) => {
-        isAuthenticated.value = !!user;
-        fetchTopHaikus();
-      });
-      return () => unsubscribe();
-    });
-
     const handleAvatarError = (haiku) => {
       haiku.photoURL = null;  // This will trigger the placeholder to show
     };
@@ -241,6 +233,14 @@ export default {
     const getInitials = (name) => {
       return name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
     };
+
+    onMounted(() => {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        isAuthenticated.value = !!user;
+        fetchTopHaikus();
+      });
+      return () => unsubscribe();
+    });
 
     return {
       topHaikus,

@@ -4,12 +4,11 @@ import App from './App.vue';
 import router from './router';
 import VueLazyload from 'vue-lazyload';
 import { createHead } from '@vueuse/head';
+import { FontAwesomeIcon } from './services/font-awesome.js';
 
 import ProfileImage from './components/ProfileImage.vue';
 
 import { library } from '@fortawesome/fontawesome-svg-core'
-
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 import { faUserSecret } from '@fortawesome/free-solid-svg-icons'
 
@@ -32,7 +31,7 @@ app.use(VueLazyload, {
     attempt: 1
   });
 
-app.component('font-awesome-icon', FontAwesomeIcon)
+app.component('font-awesome-icon', FontAwesomeIcon);
 
 app.component('ProfileImage', ProfileImage);
 

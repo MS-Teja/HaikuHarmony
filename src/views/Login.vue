@@ -1,6 +1,5 @@
 <template>
-    <div>
-      <h2>Login or Sign Up</h2>
+    <div class="login">
       <AuthForm />
     </div>
   </template>
@@ -14,3 +13,16 @@
     }
   }
   </script>
+
+<style scoped>
+  .login{
+    height: 100%;
+    margin-top: 150px;
+  }
+
+  @media (max-width: 900px) {
+    .login {
+      margin-top: 100px;
+    }
+  }
+</style>

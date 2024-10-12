@@ -22,12 +22,7 @@
   });
 
   const imageSrc = ref(props.src);
-
-  const handleImageError = () => {
-    // Set a default image URL or data URI
-    imageSrc.value = '/path/to/default/profile-image.png';
-  };
-  </script>
+</script>
 
   <style scoped>
   .profile-image {

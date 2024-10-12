@@ -1,44 +1,55 @@
 <template>
     <div class="user-account">
-      <h1>{{ displayName }}'s Haikus</h1>
-      <div v-if="loading" class="loading">Loading haikus...</div>
+      <div v-if="loading" class="loading">
+        <div class="typing-indicator">
+          <div class="typing-circle"></div>
+          <div class="typing-circle"></div>
+          <div class="typing-circle"></div>
+          <div class="typing-shadow"></div>
+          <div class="typing-shadow"></div>
+          <div class="typing-shadow"></div>
+        </div>
+      </div>
       <div v-else-if="error" class="error">{{ error }}</div>
       <div v-else-if="userHaikus.length === 0" class="no-haikus">No haikus found.</div>
-      <div v-else class="haiku-grid">
-        <div v-for="haiku in userHaikus" :key="haiku.id" class="haiku-card" @click="navigateToHaiku(haiku.id)">
-          <div class="haiku-image-container">
-            <img
-              v-lazy="{
-                src: getImageSrc(haiku.image),
-                loading: '/images/loading-placeholder.webp',
-                error: '/images/error-placeholder.webp'
-              }"
-              :alt="haiku.text"
-            >
-            <div class="haiku-text-overlay">
-              <p v-for="(line, index) in haiku.text.split('\n')" :key="index">{{ line }}</p>
-            </div>
-          </div>
-          <div class="haiku-footer">
-            <div class="author">
+      <div v-else class="haiku-container">
+        <h1>{{ displayName }}'s Haikus</h1>
+        <div class="haiku-grid">
+          <div v-for="haiku in userHaikus" :key="haiku.id" class="haiku-card" @click="navigateToHaiku(haiku.id)">
+            <div class="haiku-image-container">
               <img
-              v-if="haiku.photoURL"
-              :src="haiku.photoURL"
-              :alt="haiku.displayName"
-              class="author-avatar"
-              @error="handleAvatarError(haiku)"
-            >
-            <div v-else class="author-avatar-placeholder">{{ getInitials(haiku.displayName) }}</div>
-              <span>{{ haiku.displayName || 'Anonymous' }}</span>
+                v-lazy="{
+                  src: getImageSrc(haiku.image),
+                  loading: '/images/loading-placeholder.webp',
+                  error: '/images/error-placeholder.webp'
+                }"
+                :alt="haiku.text"
+              >
+              <div class="haiku-text-overlay">
+                <p v-for="(line, index) in haiku.text.split('\n')" :key="index">{{ line }}</p>
+              </div>
             </div>
-            <div class="tags">
-              <span v-for="tag in haiku.tags" :key="tag" class="tag">{{ tag }}</span>
-            </div>
-            <div class="haiku-actions">
-            <button class="like-btn" @click.stop="toggleLike(haiku)">
-                ❤️ {{ haiku.likes }}
-              </button>
-            <button class="share-btn" @click.stop="shareHaiku(haiku.id)">🔗</button>
+            <div class="haiku-footer">
+              <div class="author">
+                <img
+                v-if="haiku.photoURL"
+                :src="haiku.photoURL"
+                :alt="haiku.displayName"
+                class="author-avatar"
+                @error="handleAvatarError(haiku)"
+              >
+              <div v-else class="author-avatar-placeholder">{{ getInitials(haiku.displayName) }}</div>
+                <span>{{ haiku.displayName || 'Anonymous' }}</span>
+              </div>
+              <div class="tags">
+                <span v-for="tag in haiku.tags" :key="tag" class="tag">{{ tag }}</span>
+              </div>
+              <div class="haiku-actions">
+              <button class="like-btn" @click.stop="toggleLike(haiku)">
+                  ❤️ {{ haiku.likes }}
+                </button>
+              <button class="share-btn" @click.stop="shareHaiku(haiku.id)">🔗</button>
+              </div>
             </div>
           </div>
         </div>
@@ -347,7 +358,7 @@ import { doc, updateDoc, increment, arrayUnion, arrayRemove, getDoc, setDoc } fr
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.35);
   color: white;
   display: flex;
   flex-direction: column;
@@ -385,8 +396,11 @@ import { doc, updateDoc, increment, arrayUnion, arrayRemove, getDoc, setDoc } fr
 
 .loading, .error {
   text-align: center;
-  margin-top: 50px;
+  margin-top: 300px;
   font-size: 1.2em;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .image-error {
@@ -398,5 +412,95 @@ import { doc, updateDoc, increment, arrayUnion, arrayRemove, getDoc, setDoc } fr
   color: white;
   padding: 10px;
   border-radius: 5px;
+}
+
+/* Loading animation */
+.typing-indicator {
+  width: 60px;
+  height: 30px;
+  position: relative;
+  z-index: 4;
+}
+
+.typing-circle {
+  width: 8px;
+  height: 8px;
+  position: absolute;
+  border-radius: 50%;
+  background-color: #000;
+  left: 15%;
+  transform-origin: 50%;
+  animation: typing-circle7124 0.5s alternate infinite ease;
+}
+
+@keyframes typing-circle7124 {
+  0% {
+    top: 20px;
+    height: 5px;
+    border-radius: 50px 50px 25px 25px;
+    transform: scaleX(1.7);
+  }
+
+  40% {
+    height: 8px;
+    border-radius: 50%;
+    transform: scaleX(1);
+  }
+
+  100% {
+    top: 0%;
+  }
+}
+
+.typing-circle:nth-child(2) {
+  left: 45%;
+  animation-delay: 0.2s;
+}
+
+.typing-circle:nth-child(3) {
+  left: auto;
+  right: 15%;
+  animation-delay: 0.3s;
+}
+
+.typing-shadow {
+  width: 5px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.2);
+  position: absolute;
+  top: 30px;
+  transform-origin: 50%;
+  z-index: 3;
+  left: 15%;
+  filter: blur(1px);
+  animation: typing-shadow046 0.5s alternate infinite ease;
+}
+
+@keyframes typing-shadow046 {
+  0% {
+    transform: scaleX(1.5);
+  }
+
+  40% {
+    transform: scaleX(1);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scaleX(0.2);
+    opacity: 0.4;
+  }
+}
+
+.typing-shadow:nth-child(4) {
+  left: 45%;
+  animation-delay: 0.2s;
+}
+
+.typing-shadow:nth-child(5) {
+  left: auto;
+  right: 15%;
+  animation-delay: 0.3s;
 }
 </style>

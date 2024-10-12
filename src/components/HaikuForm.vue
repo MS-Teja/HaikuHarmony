@@ -17,7 +17,7 @@
         <option value="8">Soft Rain Falling Over a Quiet Garden</option>
       </select>
       <input v-model="tags" placeholder="Tags (comma-separated)" required>
-      <button type="submit" class="submit-btn" :disabled="!isFormValid">Submit Haiku</button>
+      <button type="submit" class="submit-btn" :disabled="!isFormValid || isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Haiku' }}</button>
     </form>
     <p v-if="message" :class="{ 'success': isSuccess, 'error': !isSuccess }">
       {{ message }}
@@ -38,6 +38,7 @@ export default {
     const tags = ref('');
     const message = ref('');
     const isSuccess = ref(false);
+    const isSubmitting = ref(false);
     const userStore = useUserStore();
 
     const isFormValid = computed(() => {
@@ -45,22 +46,27 @@ export default {
     });
 
     const submitHaiku = async () => {
-    try {
-      const haikuText = `${line1.value}\n${line2.value}\n${line3.value}`;
-      const response = await fetch('/.netlify/functions/uploadToPinata', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: haikuText,
-          selectedImage: selectedImageId.value,
-          userId: userStore.user.uid,
-          displayName: userStore.user.displayName,
-          photoURL: userStore.user.photoURL,
-          tags: tags.value.split(',').map(tag => tag.trim())
-        }),
-      });;
+      if (isSubmitting.value) return;
+
+      isSubmitting.value = true;
+      message.value = '';
+
+      try {
+        const haikuText = `${line1.value}\n${line2.value}\n${line3.value}`;
+        const response = await fetch('/.netlify/functions/uploadToPinata', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: haikuText,
+            selectedImage: selectedImageId.value,
+            userId: userStore.user.uid,
+            displayName: userStore.user.displayName,
+            photoURL: userStore.user.photoURL,
+            tags: tags.value.split(',').map(tag => tag.trim())
+          }),
+        });
 
         if (!response.ok) {
           throw new Error('Failed to submit haiku');
@@ -79,17 +85,17 @@ export default {
         message.value = 'Haiku submitted successfully!';
         isSuccess.value = true;
 
-        // Optionally, emit an event to refresh the haiku list
-        // this.$emit('haiku-submitted');
       } catch (error) {
         console.error('Error submitting haiku:', error);
         message.value = 'Failed to submit haiku. Please try again.';
         isSuccess.value = false;
+      } finally {
+        isSubmitting.value = false;
       }
     };
 
     return {
-      line1, line2, line3, selectedImageId, tags, submitHaiku, isFormValid, message, isSuccess
+      line1, line2, line3, selectedImageId, tags, submitHaiku, isFormValid, message, isSuccess, isSubmitting
     };
   }
 }
@@ -98,7 +104,7 @@ export default {
 <style scoped>
 .haiku-form {
   max-width: 400px;
-  margin: 0 auto;
+  margin: 150px auto;
   padding: 20px;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -143,4 +149,10 @@ input, select {
 .error {
   color: #dc3545;
 }
+
+@media (max-width: 900px) {
+    .haiku-form {
+      margin-top: 100px;
+    }
+  }
 </style>

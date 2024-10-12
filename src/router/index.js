@@ -9,14 +9,14 @@ import UserAccount from '../views/UserAccount.vue';
 import About from '../views/About.vue';
 
 const routes = [
-  { path: '/', name: 'home', component: Home },
+  { path: '/home', name: 'home', component: Home },
   { path: '/submit', component: Submit },
   { path: '/login', component: Login },
   { path: '/search', name: 'SearchResults', component: SearchResults },
   { path: '/hall-of-fame', component: HallOfFame },
   { path: '/haiku/:id', name: 'HaikuView', component: HaikuView },
   { path: '/user/:userId', component: UserAccount },
-  { path: '/about', component: About },
+  { path: '/', component: About },
 ];
 
 const router = createRouter({

@@ -2,7 +2,7 @@
   <div id="app" @click="handleOutsideClick">
     <nav class="navbar">
       <div class="navbar-left">
-        <router-link to="/" class="nav-logo">Haiku Harmony</router-link>
+        <router-link to="/home" class="nav-logo">Haiku Harmony</router-link>
       </div>
       <div class="navbar-center" :class="{ 'search-active': isSearchActive }">
         <form @submit.prevent="performSearch" class="search-form group">
@@ -27,7 +27,7 @@
         <div class="desktop-menu">
           <router-link to="/hall-of-fame" class="nav-link">Hall Of Fame</router-link>
           <router-link to="/submit" class="nav-link">Create a Haiku</router-link>
-          <router-link to="/about" class="nav-link">About</router-link>
+          <router-link to="/" class="nav-link">About</router-link>
         </div>
         <div class="search-icon" @click.stop="toggleSearch">
           <span class="material-symbols-outlined">
@@ -62,7 +62,7 @@
     <div class="mobile-menu" :class="{ 'active': isBurgerActive }" @click.stop>
       <router-link to="/hall-of-fame" class="nav-link mobile-menu-options" @click="closeBurgerMenu">Hall Of Fame</router-link>
       <router-link to="/submit" class="nav-link mobile-menu-options" @click="closeBurgerMenu">Create a Haiku</router-link>
-      <router-link to="/about" class="nav-link mobile-menu-options" @click="closeBurgerMenu">About</router-link>
+      <router-link to="/" class="nav-link mobile-menu-options" @click="closeBurgerMenu">About</router-link>
     </div>
     <div class="overlay" :class="{ 'active': isBurgerActive }" @click="closeBurgerMenu"></div>
     <router-view></router-view>
@@ -128,7 +128,7 @@ export default {
     const logout = async () => {
       try {
         await signOut(auth);
-        router.push('/');
+        router.push('/home');
       } catch (error) {
         console.error('Logout error:', error);
       }

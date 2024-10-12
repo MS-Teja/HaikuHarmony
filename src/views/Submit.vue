@@ -1,8 +1,7 @@
 <template>
-  <div>
-    <!-- <h2>Submit a Haiku</h2> -->
+  <div class="submit">
     <HaikuForm v-if="isAuthenticated" />
-    <div v-else>
+    <div v-else class="login">
       <p>Please log in to submit a haiku.</p>
       <router-link to="/login">Log In</router-link>
     </div>
@@ -31,3 +30,14 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+  .login{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    margin-top: 40px;
+  }
+</style>

@@ -42,7 +42,7 @@ export default {
         } else {
           await createUserWithEmailAndPassword(auth, email.value, password.value);
         }
-        router.push('/');
+        router.push('/home');
       } catch (error) {
         alert(error.message);
       }
@@ -56,7 +56,7 @@ export default {
       try {
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
-        router.push('/');
+        router.push('/home');
       } catch (error) {
         console.error('Google sign-in error:', error);
         alert(error.message);

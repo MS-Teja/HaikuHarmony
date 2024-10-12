@@ -192,7 +192,7 @@ export default {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 868px) {
   .feature-grid {
     grid-template-columns: 1fr;
   }
@@ -203,6 +203,10 @@ export default {
 
   .subtitle {
     font-size: 1.2rem;
+  }
+
+  .hero-section {
+    min-height: 25vh;
   }
 }
 </style>

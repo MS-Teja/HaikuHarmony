@@ -34,9 +34,9 @@ export default {
         hover: false
       },
       {
-        icon: '🖼️',
-        title: 'Visual Inspiration',
-        description: 'Choose from curated images to accompany your poetic creations.',
+        icon: '🎨',
+        title: 'Daily Themes',
+        description: 'Get inspired by our daily themes and prompts for your haiku creation.',
         hover: false
       },
       {

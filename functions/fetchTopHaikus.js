@@ -6,21 +6,16 @@ const pinataGateway = process.env.PINATA_GATEWAY;
 const IMAGE_MAP_CID = 'QmbVtDZJJrKyFAtGRzJPXayDkVecayQCKq8QCMeEghP6vZ'; // CID of your imageMap.json
 
 exports.handler = async (event) => {
-  console.log('Fetching top haikus...');
   try {
     // Fetch the image map
     const imageMapResponse = await axios.get(`https://${pinataGateway}/ipfs/${IMAGE_MAP_CID}`);
     const imageMap = imageMapResponse.data;
-
-    console.log('Fetched image map:', imageMap);
 
     // Fetch all haikus
     const pinList = await pinata.pinList({
       status: 'pinned',
       metadata: { name: 'haiku_metadata.json' }
     });
-
-    console.log('Fetched pin list:', pinList);
 
     // Process and sort haikus
     const haikus = await Promise.all(pinList.rows.map(async (pin) => {
@@ -47,8 +42,6 @@ exports.handler = async (event) => {
     const topHaikus = haikus
       .sort((a, b) => b.likes - a.likes)
       .slice(0, 5);
-
-    console.log('Top 5 haikus:', topHaikus);
 
     return {
       statusCode: 200,

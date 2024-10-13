@@ -1,6 +1,6 @@
 <template>
   <div class="home container">
-    <p class="theme">Today's Theme is Cherry blossoms</p>
+    <p class="theme">Today's Theme is Spring <router-link to="/submit" class="cta-button">Compose a Haiku</router-link></p>
     <div v-if="loading" class="loading">
       <div class="typing-indicator">
           <div class="typing-circle"></div>
@@ -302,3 +302,14 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+  .theme a {
+    color: #666;
+    text-decoration: none;
+  }
+
+  .theme a:hover {
+    text-decoration: underline;
+  }
+</style>

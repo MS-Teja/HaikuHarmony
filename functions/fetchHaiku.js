@@ -20,13 +20,9 @@ exports.handler = async (event) => {
     const imageMapResponse = await axios.get(`https://${pinataGateway}/ipfs/${IMAGE_MAP_CID}`);
     const imageMap = imageMapResponse.data;
 
-    console.log('Fetched image map:', imageMap);
-
     // Fetch the haiku data
     const response = await axios.get(`https://${pinataGateway}/ipfs/${id}`);
     const haikuData = response.data;
-
-    console.log('Raw haiku data:', haikuData);
 
     // Map the numeric image identifier to an IPFS hash
     const imageHash = imageMap[haikuData.image] || haikuData.image;
@@ -42,9 +38,6 @@ exports.handler = async (event) => {
       tags: haikuData.tags ? haikuData.tags.split(',') : [],
       likes: parseInt(haikuData.likes) || 0
     };
-
-    console.log('Processed haiku:', haiku);
-    console.log('Pinata Gateway:', pinataGateway);
 
     return {
       statusCode: 200,

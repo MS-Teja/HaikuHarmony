@@ -57,8 +57,6 @@ exports.handler = async (event) => {
     const filteredHaikus = matchingHaikus.filter(haiku => haiku !== null)
       .sort((a, b) => b.timestamp - a.timestamp);
 
-    console.log(`Found ${filteredHaikus.length} matching haikus`);
-
     return {
       statusCode: 200,
       body: JSON.stringify({ haikus: filteredHaikus, pinataGateway })

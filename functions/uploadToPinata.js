@@ -9,8 +9,6 @@ exports.handler = async (event) => {
   try {
     const { text, selectedImage, userId, displayName, photoURL, tags } = JSON.parse(event.body);
 
-    console.log('Uploading haiku:', { text, userId, displayName, tags });
-
     const haikuData = {
       text,
       image: selectedImage, // This will be the base64 encoded image or the image identifier
@@ -29,8 +27,6 @@ exports.handler = async (event) => {
     };
 
     const result = await pinata.pinJSONToIPFS(haikuData, pinataOptions);
-
-    console.log('Pinata upload result:', result);
 
     return {
       statusCode: 200,

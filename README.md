@@ -4,7 +4,7 @@ Haiku Harmony is a web application that celebrates the art of haiku by providing
 
 ## Live Demo
 
-Visit Haiku Harmony: [https://haikuharmony.netlify.app/](https://haikuharmony.netlify.app/)
+Visit Haiku Harmony: [Haiku Harmony](https://haikuharmony.netlify.app/)
 
 ## Features
 
@@ -82,4 +82,3 @@ If you have any feedback or suggestions, please open an issue in this repository
 ## License
 
 This project is open source and available under the [MIT License](LICENSE).
-```

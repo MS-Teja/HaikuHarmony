@@ -577,4 +577,14 @@ export default {
       margin: 0;
   }
 }
+
+@media (min-width: 2000px) {
+  .navbar {
+    font-size: 2rem;
+  }
+
+  .nav-logo {
+    font-size: 3rem;
+  }
+}
 </style>

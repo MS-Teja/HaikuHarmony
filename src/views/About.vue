@@ -1,17 +1,18 @@
 <template>
   <div class="about-page">
-    <div class="hero-section">
-      <h1 class="title">Haiku Harmony</h1>
-      <p class="subtitle">Where words dance and images sing</p>
-    </div>
-
-    <div class="feature-grid">
-      <div v-for="feature in features" :key="feature.title" class="feature-card" @mouseover="feature.hover = true" @mouseleave="feature.hover = false">
-        <div class="feature-icon" :class="{ 'hover': feature.hover }">{{ feature.icon }}</div>
-        <h3>{{ feature.title }}</h3>
-        <p>{{ feature.description }}</p>
+    <router-link to="/home">
+      <div class="hero-section">
+        <h1 class="title">Haiku Harmony</h1>
+        <p class="subtitle">Where words dance and images sing</p>
       </div>
-    </div>
+      <div class="feature-grid">
+        <div v-for="feature in features" :key="feature.title" class="feature-card" @mouseover="feature.hover = true" @mouseleave="feature.hover = false">
+          <div class="feature-icon" :class="{ 'hover': feature.hover }">{{ feature.icon }}</div>
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.description }}</p>
+        </div>
+      </div>
+    </router-link>
 
     <div class="cta-section">
       <h2>Ready to craft your masterpiece?</h2>
@@ -130,6 +131,10 @@ export default {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .feature-card:hover {
@@ -181,6 +186,11 @@ export default {
   transform: scale(1.05);
 }
 
+a {
+  text-decoration: none;
+  color: #666;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -207,6 +217,33 @@ export default {
 
   .hero-section {
     min-height: 25vh;
+  }
+}
+
+@media (min-width: 2000px) {
+  .about-page{
+    min-width: 80vw;
+  }
+
+  .title {
+    font-size: 10rem;
+  }
+
+  .subtitle {
+    font-size: 3rem;
+  }
+
+  .feature-grid{
+    gap: 8rem;
+    grid-template-columns: repeat(auto-fit, minmax(1000px, 1fr));
+  }
+
+  .feature-card h3 {
+    font-size: 3rem;
+  }
+
+  .feature-card p {
+    font-size: 2rem;
   }
 }
 </style>

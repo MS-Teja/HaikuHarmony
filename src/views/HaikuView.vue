@@ -1,5 +1,5 @@
 <template>
-  <div class="haiku-view" v-if="haiku">
+  <div class="haiku-view container" v-if="haiku">
     <div class="haiku-card">
       <div class="haiku-image-container">
         <img
@@ -26,19 +26,57 @@
             <div v-else class="author-avatar-placeholder">{{ getInitials(haiku.displayName) }}</div>
             <span>{{ haiku.displayName || 'Anonymous' }}</span>
           </div>
-          <div class="tags">
-            <span v-for="tag in haiku.tags" :key="tag" class="tag">{{ tag }}</span>
-          </div>
           <div class="haiku-actions">
             <button class="like-btn" @click.stop="toggleLike(haiku)">
-              ❤️ {{ haiku.likes }}
+              <div class="heart-container" title="Like">
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  :id="'like-' + haiku.id"
+                  :checked="haiku.liked"
+                  @change="toggleLike(haiku)"
+                >
+                <div class="svg-container">
+                    <svg viewBox="0 0 24 24" class="svg-outline" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M17.5,1.917a6.4,6.4,0,0,0-5.5,3.3,6.4,6.4,0,0,0-5.5-3.3A6.8,6.8,0,0,0,0,8.967c0,4.547,4.786,9.513,8.8,12.88a4.974,4.974,0,0,0,6.4,0C19.214,18.48,24,13.514,24,8.967A6.8,6.8,0,0,0,17.5,1.917Zm-3.585,18.4a2.973,2.973,0,0,1-3.83,0C4.947,16.006,2,11.87,2,8.967a4.8,4.8,0,0,1,4.5-5.05A4.8,4.8,0,0,1,11,8.967a1,1,0,0,0,2,0,4.8,4.8,0,0,1,4.5-5.05A4.8,4.8,0,0,1,22,8.967C22,11.87,19.053,16.006,13.915,20.313Z">
+                      </path>
+                    </svg>
+                    <svg viewBox="0 0 24 24" class="svg-filled" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.5,1.917a6.4,6.4,0,0,0-5.5,3.3,6.4,6.4,0,0,0-5.5-3.3A6.8,6.8,0,0,0,0,8.967c0,4.547,4.786,9.513,8.8,12.88a4.974,4.974,0,0,0,6.4,0C19.214,18.48,24,13.514,24,8.967A6.8,6.8,0,0,0,17.5,1.917Z">
+                        </path>
+                    </svg>
+                    <svg class="svg-celebrate" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="10,10 20,20"></polygon>
+                        <polygon points="10,50 20,50"></polygon>
+                        <polygon points="20,80 30,70"></polygon>
+                        <polygon points="90,10 80,20"></polygon>
+                        <polygon points="90,50 80,50"></polygon>
+                        <polygon points="80,80 70,70"></polygon>
+                    </svg>
+                </div>
+              </div>
+              <p> {{ haiku.likes }} </p>
             </button>
-            <button class="share-btn" @click.stop="shareHaiku(haiku.id)">🔗</button>
+            <button class="share-btn" @click.stop="shareHaiku(haiku.id)">
+              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#686868"><path d="M680-80q-50 0-85-35t-35-85q0-6 3-28L282-392q-16 15-37 23.5t-45 8.5q-50 0-85-35t-35-85q0-50 35-85t85-35q24 0 45 8.5t37 23.5l281-164q-2-7-2.5-13.5T560-760q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35q-24 0-45-8.5T598-672L317-508q2 7 2.5 13.5t.5 14.5q0 8-.5 14.5T317-452l281 164q16-15 37-23.5t45-8.5q50 0 85 35t35 85q0 50-35 85t-85 35Zm0-80q17 0 28.5-11.5T720-200q0-17-11.5-28.5T680-240q-17 0-28.5 11.5T640-200q0 17 11.5 28.5T680-160ZM200-440q17 0 28.5-11.5T240-480q0-17-11.5-28.5T200-520q-17 0-28.5 11.5T160-480q0 17 11.5 28.5T200-440Zm480-280q17 0 28.5-11.5T720-760q0-17-11.5-28.5T680-800q-17 0-28.5 11.5T640-760q0 17 11.5 28.5T680-720Zm0 520ZM200-480Zm480-280Z"/></svg>
+            </button>
           </div>
         </div>
+          <div class="tags">
+            <span v-for="tag in haiku.tags" :key="tag" class="tag" @click.stop="searchByTag(tag)">{{ tag }}</span>
+          </div>
       </div>
     </div>
-  <div v-else>Loading...</div>
+  <div v-else class="loading">
+    <div class="typing-indicator">
+        <div class="typing-circle"></div>
+        <div class="typing-circle"></div>
+        <div class="typing-circle"></div>
+        <div class="typing-shadow"></div>
+        <div class="typing-shadow"></div>
+        <div class="typing-shadow"></div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -165,18 +203,6 @@ export default {
           console.error('Error sharing haiku:', error);
           fallbackShare(shareUrl);
         }
-      } else {
-        fallbackShare(shareUrl);
-      }
-    };
-
-    const fallbackShare = async (url) => {
-      try {
-        await navigator.clipboard.writeText(url);
-        alert('Haiku link copied to clipboard!');
-      } catch (error) {
-        console.error('Error copying to clipboard:', error);
-        alert('Failed to copy link. Please try again.');
       }
     };
 
@@ -230,6 +256,13 @@ export default {
       return name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
     };
 
+    const searchByTag = (tag) => {
+      router.push({
+        name: 'SearchResults',
+        query: { tags: tag }
+      });
+    };
+
     onMounted(() => {
       const unsubscribe = auth.onAuthStateChanged((user) => {
         isAuthenticated.value = !!user;
@@ -255,7 +288,8 @@ export default {
       errorMessage,
       navigateToUserPage,
       handleAvatarError,
-      getInitials
+      getInitials,
+      searchByTag
      };
   }
 }
@@ -271,89 +305,7 @@ export default {
 }
 
 .haiku-card {
-  background-color: #fff;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-width: 500px;
   width: 100%;
-}
-
-.haiku-image-container {
-  position: relative;
-  width: 100%;
-  padding-top: 75%; /* 4:3 Aspect Ratio */
-}
-
-.haiku-image-container img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.haiku-text-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.35);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 10px;
-}
-
-.haiku-text-overlay p {
-  margin: 5px 0;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.haiku-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-}
-
-.author {
-  font-size: 0.9em;
-  color: #666;
-}
-
-.haiku-actions button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  color: #e8eaed;
-  margin-left: 10px;
-}
-
-.like-btn.liked {
-  color: #ff4081;
-}
-
-.like-btn svg, .share-btn svg {
-  margin-right: 5px;
-}
-
-.image-error {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(255, 0, 0, 0.7);
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
 }
 </style>

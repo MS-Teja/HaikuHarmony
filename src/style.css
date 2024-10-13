@@ -73,7 +73,7 @@
 .haiku-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 7rem;
+  gap: 5rem;
 }
 
 .haiku-card {
@@ -367,6 +367,15 @@
     opacity: 0;
     display: none;
   }
+}
+
+@media (min-width: 1490px) {
+  .haiku-grid {
+    gap: 7rem;
+  }
+   .container{
+    margin: 0 170px;
+   }
 }
 
 @media (min-width: 2000px) {

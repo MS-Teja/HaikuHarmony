@@ -225,18 +225,19 @@ export default {
   min-width: 160px;
   box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
   z-index: 1;
-  padding: 0.5rem;
+  border-radius: 5px;
 }
 
 .dropdown-content a {
   color: #333;
   text-decoration: none;
   display: block;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0.5rem;
 }
 
 .dropdown-content a:hover {
   background-color: #f1f1f1;
+  border-radius: 5px;
 }
 
 .navbar-center {
@@ -546,8 +547,9 @@ export default {
     top: 100%;
     left: 0;
     right: 0;
-    background-color: #fff;
+    background-color: transparent;
     padding: 1rem;
+    z-index: 1;
   }
 
   .search-form {

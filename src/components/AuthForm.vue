@@ -7,7 +7,6 @@
       <button type="submit" class="primary-btn">{{ isLogin ? 'Sign In' : 'Sign Up' }}</button>
     </form>
     <button @click="signInWithGoogle" class="google-btn">
-      <font-awesome-icon :icon="['fab', 'google']" style="color: #000000;" />
       Sign in with Google
     </button>
     <p class="toggle-mode">
@@ -118,7 +117,7 @@ input {
 }
 
 .google-btn img {
-  width: 18px;
+  width: 100%;
   margin-right: 10px;
 }
 
